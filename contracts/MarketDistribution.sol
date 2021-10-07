@@ -58,7 +58,7 @@ contract MarketDistribution is TokensRecoverable, IMarketDistribution
 
     IMarketGeneration public marketGeneration;
     IUniswapV2Router02 uniswapRouter;
-    IUniswapV2Factory pancakeFactory;
+    IUniswapV2Factory uniswapFactory;
     RootedToken public rootedToken;
     IERC31337 public eliteToken;
     IERC20 public baseToken;
@@ -109,7 +109,7 @@ contract MarketDistribution is TokensRecoverable, IMarketDistribution
         baseToken = _eliteToken.wrappedToken();
         liquidityController = _liquidityController;
         uniswapRouter = _uniswapRouter;
-        pancakeFactory = IUniswapV2Factory(_uniswapRouter.factory());
+        uniswapFactory = IUniswapV2Factory(_uniswapRouter.factory());
         marketGeneration = _marketGeneration;
         vestingDuration = _vestingDuration;
         devCutPercent = _devCutPercent;
@@ -120,20 +120,20 @@ contract MarketDistribution is TokensRecoverable, IMarketDistribution
 
     function setupEliteRooted() public
     {
-        rootedEliteLP = IUniswapV2Pair(pancakeFactory.getPair(address(eliteToken), address(rootedToken)));
+        rootedEliteLP = IUniswapV2Pair(uniswapFactory.getPair(address(eliteToken), address(rootedToken)));
         if (address(rootedEliteLP) == address(0)) 
         {
-            rootedEliteLP = IUniswapV2Pair(pancakeFactory.createPair(address(eliteToken), address(rootedToken)));
+            rootedEliteLP = IUniswapV2Pair(uniswapFactory.createPair(address(eliteToken), address(rootedToken)));
             require (address(rootedEliteLP) != address(0));
         }
     }
 
     function setupBaseRooted() public
     {
-        rootedBaseLP = IUniswapV2Pair(pancakeFactory.getPair(address(baseToken), address(rootedToken)));
+        rootedBaseLP = IUniswapV2Pair(uniswapFactory.getPair(address(baseToken), address(rootedToken)));
         if (address(rootedBaseLP) == address(0)) 
         {
-            rootedBaseLP = IUniswapV2Pair(pancakeFactory.createPair(address(baseToken), address(rootedToken)));
+            rootedBaseLP = IUniswapV2Pair(uniswapFactory.createPair(address(baseToken), address(rootedToken)));
             require (address(rootedBaseLP) != address(0));
         }
     }

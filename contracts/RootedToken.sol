@@ -18,7 +18,7 @@ for efficent access to market features
 
 import "./LiquidityLockedERC20.sol";
 
-contract RootedToken is LiquidityLockedERC20("Rootkit", "upBNB")
+contract RootedToken is LiquidityLockedERC20("Rootkit", "upMATIC")
 {
     address public minter;
 

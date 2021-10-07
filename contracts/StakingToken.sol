@@ -2,11 +2,10 @@
 pragma solidity ^0.7.6;
 
 import "./SafeMath.sol";
-import "./IERC20.sol";
 import "./ERC20.sol";
 import "./TokensRecoverable.sol";
 
-contract StakingToken is ERC20("upBNB Staking", "xUpBNB"), TokensRecoverable
+contract StakingToken is ERC20("upMATIC Staking", "xUpMATIC"), TokensRecoverable
 {
     using SafeMath for uint256;
     IERC20 public immutable rooted;

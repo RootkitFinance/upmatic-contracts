@@ -16,12 +16,12 @@ contract Vault is TokensRecoverable, IVault
     using SafeMath for uint256;
 
     IUniswapV2Router02 immutable uniswapRouter;
-    IUniswapV2Factory immutable pancakeFactory;
+    IUniswapV2Factory immutable uniswapFactory;
     IERC20 immutable rooted;
     IERC20 immutable base;
     IERC31337 immutable elite;
-    IERC20 immutable rootedEliteLP;
-    IERC20 immutable rootedBaseLP;
+    IERC20 rootedEliteLP;
+    IERC20 rootedBaseLP;
     IFloorCalculator public calculator;
     RootedTransferGate public gate;
     mapping(address => bool) public seniorVaultManager;
@@ -35,19 +35,21 @@ contract Vault is TokensRecoverable, IVault
         calculator = _calculator;
         gate = _gate;
 
-        IUniswapV2Factory _pancakeFactory = IUniswapV2Factory(_uniswapRouter.factory());
-        pancakeFactory = _pancakeFactory;        
+        IUniswapV2Factory _uniswapFactory = IUniswapV2Factory(_uniswapRouter.factory());
+        uniswapFactory = _uniswapFactory;        
         
         _base.approve(address(_elite), uint256(-1));
         _base.approve(address(_uniswapRouter), uint256(-1));
         _rooted.approve(address(_uniswapRouter), uint256(-1));
-        IERC20 _rootedBaseLP = IERC20(_pancakeFactory.getPair(address(_base), address(_rooted)));
-        _rootedBaseLP.approve(address(_uniswapRouter), uint256(-1));
-        rootedBaseLP = _rootedBaseLP;
-        _elite.approve(address(_uniswapRouter), uint256(-1));
-        IERC20 _rootedEliteLP = IERC20(_pancakeFactory.getPair(address(_elite), address(_rooted)));
-        _rootedEliteLP.approve(address(_uniswapRouter), uint256(-1));
-        rootedEliteLP = _rootedEliteLP;
+        _elite.approve(address(_uniswapRouter), uint256(-1));        
+    }
+
+    function initPools() public ownerOnly() {
+        rootedBaseLP = IERC20(uniswapFactory.getPair(address(base), address(rooted)));
+        rootedBaseLP.approve(address(uniswapRouter), uint256(-1));
+       
+        rootedEliteLP = IERC20(uniswapFactory.getPair(address(elite), address(rooted)));
+        rootedEliteLP.approve(address(uniswapRouter), uint256(-1));
     }
 
     modifier seniorVaultManagerOnly()

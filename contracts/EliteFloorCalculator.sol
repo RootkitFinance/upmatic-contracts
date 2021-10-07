@@ -22,19 +22,18 @@ contract EliteFloorCalculator is IFloorCalculator, TokensRecoverable
     address immutable rootedElitePair;
     address immutable rootedBasePair;
     IUniswapV2Router02 immutable internal uniswapRouter;
-    IUniswapV2Factory immutable internal pancakeFactory;
+    IUniswapV2Factory immutable internal uniswapFactory;
     EnumerableSet.AddressSet ignoredAddresses;
 
-    constructor(IERC20 _rootedToken, IERC20 _eliteToken, IERC20 _baseToken, IUniswapV2Factory _pancakeFactory, IUniswapV2Router02 _uniswapRouter)
+    constructor(IERC20 _rootedToken, IERC20 _eliteToken, IERC20 _baseToken, IUniswapV2Factory _uniswapFactory, IUniswapV2Router02 _uniswapRouter)
     {
         rootedToken = _rootedToken;
-        pancakeFactory = _pancakeFactory;
+        uniswapFactory = _uniswapFactory;
         uniswapRouter = _uniswapRouter;
 
-        rootedElitePair = _pancakeFactory.getPair(address(_eliteToken), address(_rootedToken));
-        rootedBasePair = _pancakeFactory.getPair(address(_baseToken), address(_rootedToken));
-    }    
-
+        rootedElitePair = _uniswapFactory.getPair(address(_eliteToken), address(_rootedToken));
+        rootedBasePair = _uniswapFactory.getPair(address(_baseToken), address(_rootedToken));
+    }
 
     function setIgnoreAddresses(address ignoredAddress, bool add) public ownerOnly()
     {
