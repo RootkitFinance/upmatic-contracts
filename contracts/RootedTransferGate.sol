@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: U-U-U-UPPPPP!!!
 pragma solidity ^0.7.6;
-pragma experimental ABIEncoderV2;
 
 /* ROOTKIT:
 A transfer gate (GatedERC20) for use with upTokens
@@ -17,7 +16,6 @@ It:
 */
 
 import "./Address.sol";
-import "./IUniswapV2Factory.sol";
 import "./IERC20.sol";
 import "./IUniswapV2Pair.sol";
 import "./ILiquidityLockedERC20.sol";
@@ -27,6 +25,7 @@ import "./SafeMath.sol";
 import "./TokensRecoverable.sol";
 import "./ITransferGate.sol";
 import "./FreeParticipantRegistry.sol";
+import "./BlackListRegistry.sol";
 
 contract RootedTransferGate is TokensRecoverable, ITransferGate
 {   
@@ -35,7 +34,6 @@ contract RootedTransferGate is TokensRecoverable, ITransferGate
     using SafeMath for uint256;
 
     IUniswapV2Router02 immutable internal uniswapRouter;
-    IUniswapV2Factory immutable internal pancakeFactory;
     ILiquidityLockedERC20 immutable internal rootedToken;
 
     bool public unrestricted;
@@ -47,6 +45,7 @@ contract RootedTransferGate is TokensRecoverable, ITransferGate
     uint16 public feesRate;
     IUniswapV2Pair public mainPool;
     FreeParticipantRegistry public freeParticipantRegistry;
+    BlackListRegistry public blackListRegistry;
    
     uint16 public dumpTaxStartRate; 
     uint256 public dumpTaxDurationInSeconds;
@@ -56,7 +55,6 @@ contract RootedTransferGate is TokensRecoverable, ITransferGate
     {
         rootedToken = _rootedToken;
         uniswapRouter = _uniswapRouter;
-        pancakeFactory = IUniswapV2Factory(_uniswapRouter.factory());
     }
 
     function setUnrestrictedController(address unrestrictedController, bool allow) public ownerOnly()
@@ -95,7 +93,12 @@ contract RootedTransferGate is TokensRecoverable, ITransferGate
     function setFreeParticipantRegistry(FreeParticipantRegistry _freeParticipantRegistry) public ownerOnly()
     {
         freeParticipantRegistry = _freeParticipantRegistry;
-    }    
+    }
+
+    function setBlackListRegistry(BlackListRegistry _blackListRegistry) public ownerOnly()
+    {
+        blackListRegistry = _blackListRegistry;
+    }
 
     function setMainPool(IUniswapV2Pair _mainPool) public ownerOnly()
     {
@@ -140,6 +143,11 @@ contract RootedTransferGate is TokensRecoverable, ITransferGate
         if (unrestricted || freeParticipantRegistry.freeParticipant(from) || freeParticipantRegistry.freeParticipant(to)) 
         {
             return 0;
+        }
+
+        if (blackListRegistry.blackList(from) || blackListRegistry.blackList(to))
+        {
+            return amount;
         }
 
         uint16 poolTaxRate = poolsTaxRates[to];
