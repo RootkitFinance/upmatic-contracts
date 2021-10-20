@@ -26,9 +26,10 @@ contract MarketGeneration is TokensRecoverable, IMarketGeneration
     IMarketDistribution public marketDistribution;
     uint256 public refundsAllowedUntil;
 
-    constructor(address _devAddress)
+    constructor(address _devAddress, IERC20 _baseToken)
     {
         devAddress = _devAddress;
+        baseToken = _baseToken;
     }
 
     modifier active()
@@ -37,18 +38,13 @@ contract MarketGeneration is TokensRecoverable, IMarketGeneration
         _;
     }
 
-    function init(IERC20 _baseToken) public ownerOnly()
-    {
-        require (!isActive && block.timestamp >= refundsAllowedUntil, "Already activated");
-        baseToken = _baseToken;
-    }
-
     function activate(IMarketDistribution _marketDistribution) public ownerOnly()
     {
         require (!isActive && block.timestamp >= refundsAllowedUntil, "Already activated");        
         require (address(_marketDistribution) != address(0));
         marketDistribution = _marketDistribution;
         isActive = true;
+        baseToken.safeApprove(address(marketDistribution), uint256(-1));
     }
 
     function setMarketDistribution(IMarketDistribution _marketDistribution) public ownerOnly() active()
@@ -56,7 +52,7 @@ contract MarketGeneration is TokensRecoverable, IMarketGeneration
         require (address(_marketDistribution) != address(0), "Invalid market distribution");
         if (_marketDistribution == marketDistribution) { return; }
         marketDistribution = _marketDistribution;
-
+        baseToken.safeApprove(address(marketDistribution), uint256(-1));
         // Give everyone 1 day to claim refunds if they don't approve of the new distributor
         refundsAllowedUntil = block.timestamp + 86400;
     }
@@ -67,7 +63,6 @@ contract MarketGeneration is TokensRecoverable, IMarketGeneration
         isActive = false;
         if (address(this).balance == 0) { return; }
         IWETH(address(baseToken)).deposit{ value: address(this).balance }();
-        baseToken.safeApprove(address(marketDistribution), uint256(-1));
 
         marketDistribution.distribute();
     }
@@ -75,7 +70,7 @@ contract MarketGeneration is TokensRecoverable, IMarketGeneration
     function allowRefunds() public ownerOnly() active()
     {
         isActive = false;
-        refundsAllowedUntil = uint256(-1);
+        refundsAllowedUntil = block.timestamp + 2592000; // 1 Month
     }
 
     function refund(uint256 amount) private
