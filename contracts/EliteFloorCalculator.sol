@@ -12,6 +12,7 @@ import "./IUniswapV2Router02.sol";
 import "./IUniswapV2Factory.sol";
 import "./TokensRecoverable.sol";
 import "./EnumerableSet.sol";
+import "hardhat/console.sol";
 
 contract EliteFloorCalculator is IFloorCalculator, TokensRecoverable
 {
@@ -78,13 +79,12 @@ contract EliteFloorCalculator is IFloorCalculator, TokensRecoverable
         uint256 totalRootedInPairs = rootedToken.balanceOf(rootedElitePair).add(rootedToken.balanceOf(rootedBasePair));
         uint256 totalBaseAndEliteInPairs = eliteToken.balanceOf(rootedElitePair).add(baseToken.balanceOf(rootedBasePair));
         uint256 rootedCirculatingSupply = rootedToken.totalSupply().sub(totalRootedInPairs).sub(ignoredAddressesTotalBalance());
-        uint256 amountUntilFloor = uniswapRouter.getAmountOut(rootedCirculatingSupply, totalRootedInPairs, totalBaseAndEliteInPairs);
+        uint256 amountUntilFloor = rootedCirculatingSupply > 0 ? uniswapRouter.getAmountOut(rootedCirculatingSupply, totalRootedInPairs, totalBaseAndEliteInPairs) : 0;
 
         uint256 totalExcessInPools = totalBaseAndEliteInPairs.sub(amountUntilFloor);
         uint256 previouslySwept = eliteToken.totalSupply().sub(baseToken.balanceOf(address(eliteToken)));
         
         if (previouslySwept >= totalExcessInPools) { return 0; }
-
         return totalExcessInPools.sub(previouslySwept);
     }
 }
