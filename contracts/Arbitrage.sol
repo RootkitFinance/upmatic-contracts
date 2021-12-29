@@ -5,7 +5,6 @@ import "./IERC20.sol";
 import "./IERC31337.sol";
 import "./TokensRecoverable.sol";
 import "./IUniswapV2Router02.sol";
-import "./IUniswapV2Factory.sol";
 
 contract Arbitrage is TokensRecoverable
 {
