@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: U-U-U-UPPPPP!!!
 pragma solidity ^0.7.6;
 
-
 import "./TokensRecoverable.sol";
 import "./RootedTransferGate.sol";
 
 // Contract to add 1 sided liquidty after buys via 
 // selling and setting the "to" address as the pool
 
-contract SingleSideLiquidityAdder is TokensRecoverable {
-    
+contract SingleSideLiquidityAdder is TokensRecoverable {    
     address public bot;
     IUniswapV2Router02 immutable private uniswapRouter;
     RootedTransferGate immutable private gate;
@@ -17,11 +15,11 @@ contract SingleSideLiquidityAdder is TokensRecoverable {
     address immutable private base;
     address immutable private pool;
     
-    constructor (RootedTransferGate _gate, IERC20 _rooted, address _base, IUniswapV2Router02 _uniswapRouter, address _pool) {
-        gate = _gate;
-        rooted = _rooted;
+    constructor (address _base, IERC20 _rooted, address _pool, RootedTransferGate _gate, IUniswapV2Router02 _uniswapRouter) {
         base = _base;
+        rooted = _rooted;
         pool = _pool;
+        gate = _gate;
         uniswapRouter = _uniswapRouter;
         _rooted.approve(address(_uniswapRouter), uint(-1));
     }
@@ -30,7 +28,7 @@ contract SingleSideLiquidityAdder is TokensRecoverable {
         bot = _bot;
     }
 
-    function addSingleSideLiquidity(uint256 amount) public {
+    function addSingleSideLiquidity(uint256 amount, uint256 minAmountOut) public {
         require(msg.sender == bot, "Bot only");
         require(rooted.balanceOf(address(this)) >= amount, "Not enough upToken Balance");
 
@@ -39,9 +37,8 @@ contract SingleSideLiquidityAdder is TokensRecoverable {
         address[] memory path = new address[](2);
         path[0] = address(rooted);
         path[1] = base;
-        uniswapRouter.swapExactTokensForTokens(amount, 0, path, pool, block.timestamp);
+        uniswapRouter.swapExactTokensForTokens(amount, minAmountOut, path, pool, block.timestamp);
 
         gate.setUnrestricted(false);
     }
-
 }
