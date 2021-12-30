@@ -126,7 +126,6 @@
         console.log(`${ethers.utils.formatEther(recovered)} Base tokens recovered and sent to the new vault`);
 
         // Recovering Elite from Vault
-        const eliteContract = await erc20Factory.attach(eliteToken);
         txResponse = await oldVaultContract.recoverTokens(eliteToken);
         await txResponse.wait();
         recovered = await eliteContract.balanceOf(deployer);
