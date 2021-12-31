@@ -34,28 +34,19 @@
         
         // Recovering Base from Vault
         let baseContract = await erc20Factory.attach(baseToken);
-        let balanceBefore = await baseContract.balanceOf(deployer);
-        txResponse = await oldVaultContract.recoverTokens(baseToken);
-        await txResponse.wait();
-        let balanceAfter = await baseContract.balanceOf(deployer);
-        let recovered = balanceAfter.sub(balanceBefore);
+        let recovered = await baseContract.balanceOf(deployer);
         await baseContract.transfer(newVault, recovered);
         console.log(`${ethers.utils.formatEther(recovered)} Base tokens recovered and sent to the new vault`);
 
         // Recovering Elite from Vault
-        txResponse = await oldVaultContract.recoverTokens(eliteToken);
-        await txResponse.wait();
+        let eliteContract = await erc20Factory.attach(eliteToken);
         recovered = await eliteContract.balanceOf(deployer);
         await eliteContract.transfer(newVault, recovered);
         console.log(`${ethers.utils.formatEther(recovered)} Elite tokens recovered and sent to the new vault`);
 
         // Recovering Rooted from Vault
         let rootedContract = await erc20Factory.attach(rootedToken);
-        balanceBefore = await rootedContract.balanceOf(deployer);
-        txResponse = await oldVaultContract.recoverTokens(rootedToken);
-        await txResponse.wait();
-        balanceAfter = await rootedContract.balanceOf(deployer);
-        recovered = balanceAfter.sub(balanceBefore);
+        recovered = await rootedContract.balanceOf(deployer);
         await rootedContract.transfer(newVault, recovered);
         console.log(`${ethers.utils.formatEther(recovered)} Rooted tokens recovered and sent to the new vault`);
 
