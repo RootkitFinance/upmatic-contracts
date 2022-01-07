@@ -2,10 +2,9 @@
 //      RootedTransferGate, 
 //      Vault,
 //      Arbitrage
-//      SingleSideLiquidityAdder
 //      ITokensRecoverable
 //      IERC20
-//      IERC31337
+//      EliteToken
 // 2. Right click on the script name and hit "Run" to execute
 (async () => {
     try {
@@ -20,7 +19,8 @@
         const elitePool = "0xF63E5bfDC51C0236Ef662f02738c482f91f37B24";
         const transferGate = "0xf40e1Ad286872f4a43E2FF5ca294e8F4b7772F36";
         const calculator = "0x387b14c7f3d72679314567a063735f63632b127f";
-        const oldVault = "0xD63a09dEf429E7Aa11c46aD02A011552AE9cE5AF";
+        const oldVault = "0xbF73c34ef413DbfbbDF35C935aAC0D422D7F3C28";
+        const oldArbitrage = "0x82e8b233A16c787b70B15FA1018CB5fD02241705";
         const bot = "0x439Fd1FDfF5D1c46F67220c7C38d04F366372332";
 
         const signer = (new ethers.providers.Web3Provider(web3Provider)).getSigner();
@@ -47,15 +47,6 @@
         await arbitrageContract.deployed();
         console.log('Arbitrage deployed.');
 
-        // SingleSideLiquidityAdder
-        const singleSideLiquidityAdderMetadata = JSON.parse(await remix.call('fileManager', 'getFile', `browser/artifacts/SingleSideLiquidityAdder.json`));    
-        const singleSideLiquidityAdderFactory = new ethers.ContractFactory(singleSideLiquidityAdderMetadata.abi, singleSideLiquidityAdderMetadata.data.bytecode.object, signer);
-        const singleSideLiquidityAdderContract = await singleSideLiquidityAdderFactory.deploy(baseToken, rootedToken, basePool, transferGate, router);
-
-        console.log(`SingleSideLiquidityAdder: ${singleSideLiquidityAdderContract.address}`);
-        await singleSideLiquidityAdderContract.deployed();
-        console.log('SingleSideLiquidityAdder deployed.');
-
         //=======================================================================================
         //                                          CONFIG
         //=======================================================================================
@@ -75,9 +66,9 @@
         await txResponse.wait();
         console.log('Vault is UnrestrictedController in the gate.');
 
-        txResponse = await transferGateContract.setUnrestrictedController(singleSideLiquidityAdderContract.address, true);
+        txResponse = await transferGateContract.setUnrestrictedController(arbitrageContract.address, true);
         await txResponse.wait();
-        console.log('singleSideLiquidityAdder is UnrestrictedController in the gate.');
+        console.log('Arbitrage is UnrestrictedController in the gate.');
 
         txResponse = await transferGateContract.setFeeControllers(vaultContract.address, true);
         await txResponse.wait();
@@ -87,23 +78,31 @@
         await txResponse.wait();
         txResponse = await transferGateContract.setFreeParticipant(arbitrageContract.address, true);
         await txResponse.wait();
-        txResponse = await transferGateContract.setFreeParticipant(singleSideLiquidityAdderContract.address, true);
-        await txResponse.wait();
-        console.log('Vault, Arbitrage, and SingleSideLiquidityAdder are Free Participants in the gate.');
+        console.log('Vault and Arbitrage are Free Participants in the gate.');
 
         txResponse = await arbitrageContract.setArbitrageur(bot, true);
         await txResponse.wait();
-        txResponse = await singleSideLiquidityAdderContract.setBot(bot);
-        await txResponse.wait();
-        console.log('Bot is set in arbitrage and singleSideLiquidityAdder');
+        console.log('Bot is set in arbitrage');
 
-        const eliteMetadata = JSON.parse(await remix.call('fileManager', 'getFile', `browser/artifacts/IERC31337.json`));
+        const eliteMetadata = JSON.parse(await remix.call('fileManager', 'getFile', `browser/artifacts/EliteToken.json`));
         const eliteFactory = new ethers.ContractFactory(eliteMetadata.abi, eliteMetadata.data.bytecode.object, signer);  
         const eliteContract = await eliteFactory.attach(eliteToken);
 
         txResponse = await eliteContract.setSweeper(vaultContract.address, true);
         await txResponse.wait();
         console.log('Vault is sweeper');
+
+        txResponse = await eliteContract.setFreeParticipant(vaultContract.address, true);
+        await txResponse.wait();
+        console.log('Vault is Free Participant in Elite');
+
+        txResponse = await eliteContract.setFreeParticipant(arbitrageContract.address, true);
+        await txResponse.wait();
+        console.log('Arbitrage is Free Participant in Elite');
+
+        txResponse = await eliteContract.setFreeParticipant(deployer, true);
+        await txResponse.wait();
+        console.log('Deployer is Free Participant in Elite');
 
         //=======================================================================================
         //                                      RECOVER TOKENS
@@ -147,7 +146,8 @@
         txResponse = await oldVaultContract.recoverTokens(basePool);
         await txResponse.wait();
         recovered = await basePoolContract.balanceOf(deployer);        
-        await basePoolContract.transfer(vaultContract.address, recovered);
+        txResponse = await basePoolContract.transfer(vaultContract.address, recovered);
+        await txResponse.wait();
         console.log(`${ethers.utils.formatEther(recovered)} Base Pool LPs recovered and sent to the new vault`);
 
         // Recovering Elite Pool LPs from Vault
@@ -155,8 +155,20 @@
         txResponse = await oldVaultContract.recoverTokens(elitePool);
         await txResponse.wait();
         recovered = await elitePoolContract.balanceOf(deployer);
-        await elitePoolContract.transfer(vaultContract.address, recovered);
+        txResponse = await elitePoolContract.transfer(vaultContract.address, recovered);
+        await txResponse.wait();
         console.log(`${ethers.utils.formatEther(recovered)} Elite Pool LPs recovered and sent to the new vault`);
+
+        // Recovering Base from Arbitrage
+        const oldArbitrageContract = await tokensRecoverableFactory.attach(oldArbitrage);
+        baseContract = await erc20Factory.attach(baseToken);
+        balanceBefore = await baseContract.balanceOf(deployer);
+        txResponse = await oldArbitrageContract.recoverTokens(baseToken);
+        await txResponse.wait();
+        balanceAfter = await baseContract.balanceOf(deployer);
+        recovered = balanceAfter.sub(balanceBefore);
+        await baseContract.transfer(arbitrageContract.address, recovered);
+        console.log(`${ethers.utils.formatEther(recovered)} Base tokens recovered and sent to the new arbitrage`);
 
         console.log('Done!');
     } 
