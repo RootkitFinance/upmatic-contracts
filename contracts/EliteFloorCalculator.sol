@@ -12,7 +12,6 @@ import "./IUniswapV2Router02.sol";
 import "./IUniswapV2Factory.sol";
 import "./TokensRecoverable.sol";
 import "./EnumerableSet.sol";
-import "hardhat/console.sol";
 
 contract EliteFloorCalculator is IFloorCalculator, TokensRecoverable
 {
