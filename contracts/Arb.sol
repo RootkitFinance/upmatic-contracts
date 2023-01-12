@@ -52,28 +52,10 @@ contract Arb is Owned, IArb {
         token.transfer(multisig, amount);
     }
 
-    function balanceBaseUsd(uint256 amount, uint256 minAmountOut) public override arbManagerOnly() {
-        require (minAmountOut > amount);
+    function unrestrictedSwap(uint amount, uint minAmountOut, address[] calldata path) public override arbManagerOnly() {
         gate.setUnrestricted(true);
-        address[] memory path = new address[](4);
-        path[0] = address(base);
-        path[1] = address(usd);
-        path[2] = address(rooted);
-        path[3] = address(base);
         uniswapRouter.swapExactTokensForTokens(amount, minAmountOut, path, address(this), block.timestamp);
-        gate.setUnrestricted(false);
-    }
-
-    function balanceUsdBase(uint256 amount, uint256 minAmountOut) public override arbManagerOnly() {
-        require (minAmountOut > amount);
         gate.setUnrestricted(true);
-        address[] memory path = new address[](4);
-        path[0] = address(base);
-        path[1] = address(rooted);
-        path[2] = address(usd);
-        path[3] = address(base);
-        uniswapRouter.swapExactTokensForTokens(amount, minAmountOut, path, address(this), block.timestamp);
-        gate.setUnrestricted(false);
     }
 
     function balancePriceBase(uint256 amount, uint256 minAmountOut) public override arbManagerOnly() {
@@ -84,7 +66,7 @@ contract Arb is Owned, IArb {
         path[1] = address(rooted);
         path[2] = address(elite);
         uniswapRouter.swapExactTokensForTokens(amount, minAmountOut, path, address(this), block.timestamp);
-        elite.withdrawTokens(amount);
+        elite.withdrawTokens(elite.balanceOf(address(this)));
         gate.setUnrestricted(false);
     }
 
@@ -103,22 +85,5 @@ contract Arb is Owned, IArb {
     function recoverTokens(IERC20 token) public ownerOnly() {
         require(address(token) != address(base) && address(token) != address(usd) && address(token) != address(elite) && address(token) != address(rooted));
         token.transfer(msg.sender, token.balanceOf(address(this)));
-    }
-
-    // internal functions
-    function buyRootedToken(address token, uint256 amountToSpend, uint256 minAmountOut) internal returns (uint256) {
-        address[] memory path = new address[](2);
-        path[0] = address(token);
-        path[1] = address(rooted);
-        uint256[] memory amounts = uniswapRouter.swapExactTokensForTokens(amountToSpend, minAmountOut, path, address(this), block.timestamp);
-        return amounts[1];
-    }
-
-    function sellRootedToken(address token, uint256 amountToSpend, uint256 minAmountOut) internal returns (uint256) {
-        address[] memory path = new address[](2);
-        path[0] = address(rooted);
-        path[1] = address(token);
-        uint256[] memory amounts = uniswapRouter.swapExactTokensForTokens(amountToSpend, minAmountOut, path, address(this), block.timestamp);
-        return amounts[1];
     }
 }
