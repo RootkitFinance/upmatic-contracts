@@ -33,11 +33,6 @@ contract RootedTransferGate is TokensRecoverable, ITransferGate
     uint256 public dumpTaxDurationInSeconds;
     uint256 public dumpTaxEndTimestamp;
 
-    IUniswapV2Pair basePool;
-    IUniswapV2Pair elitePool;
-    IUniswapV2Pair usdPool;
-    mapping (IUniswapV2Pair => bool) pools;
-
     bool public transferInProgress;
 
     constructor(LiquidityLockedERC20 _rootedToken, IUniswapV2Router02 _uniswapRouter, address _feeSplitter)
@@ -45,13 +40,6 @@ contract RootedTransferGate is TokensRecoverable, ITransferGate
         rootedToken = _rootedToken;
         uniswapRouter = _uniswapRouter;
         feeSplitter = _feeSplitter;
-    }
-
-    function setpools(IUniswapV2Pair _basePool, IUniswapV2Pair _elitePool, IUniswapV2Pair _usdPool) public ownerOnly()
-    {
-        basePool = _basePool;
-        elitePool = _elitePool;
-        usdPool = _usdPool;
     }
 
     function setFeeSplitter(address _feeSplitter) public ownerOnly()
@@ -73,12 +61,6 @@ contract RootedTransferGate is TokensRecoverable, ITransferGate
     function setFeeControllers(address feeController, bool allow) public ownerOnly()
     {
         feeControllers[feeController] = allow;
-    }
-
-    // sets address that can unlock liquidity
-    function setLiquidityController(address liquidityController, bool allow) public ownerOnly()
-    {
-        liquidityControllers[liquidityController] = allow;
     }
 
     // sets an address to be fee exempt
@@ -114,17 +96,6 @@ contract RootedTransferGate is TokensRecoverable, ITransferGate
         unrestricted = _unrestricted;
     }
 
-    function setLiquidityLocks(bool locked) public {
-        require (liquidityControllers[msg.sender] || msg.sender == owner, "Not an unrestricted controller");
-        rootedToken.setLiquidityLock(basePool, locked);
-        pools[basePool] = locked;
-        rootedToken.setLiquidityLock(elitePool, locked);
-        pools[elitePool] = locked;
-        rootedToken.setLiquidityLock(usdPool, locked);
-        pools[usdPool] = locked;
-
-    }
-
     function handleTransfer(address sender, address from, address to, uint256 amount) public virtual override returns (uint256)
     {
         if (transferInProgress) {
@@ -135,8 +106,7 @@ contract RootedTransferGate is TokensRecoverable, ITransferGate
 
         IUniswapV2Pair pair = IUniswapV2Pair(from);
         
-        if (pools[pair] && liquidityIncreaseRate > 0) {
-            require (sender == address(uniswapRouter));
+        if (rootedToken.liquidityPairLocked(pair) && liquidityIncreaseRate > 0) {
 
             IERC20 pairedToken = IERC20(getPairedToken(pair));
 
