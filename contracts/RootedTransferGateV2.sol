@@ -11,7 +11,7 @@ import "./SafeMath.sol";
 import "./TokensRecoverable.sol";
 import "./ITransferGate.sol";
 
-contract RootedTransferGate is TokensRecoverable, ITransferGate
+contract RootedTransferGateV2 is TokensRecoverable, ITransferGate
 {   
     using Address for address;
     using SafeERC20 for IERC20;

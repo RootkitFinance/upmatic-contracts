@@ -55,7 +55,7 @@ contract Arb is Owned, IArb {
     function unrestrictedSwap(uint amount, uint minAmountOut, address[] calldata path) public override arbManagerOnly() {
         gate.setUnrestricted(true);
         uniswapRouter.swapExactTokensForTokens(amount, minAmountOut, path, address(this), block.timestamp);
-        gate.setUnrestricted(true);
+        gate.setUnrestricted(false);
     }
 
     function balancePriceBase(uint256 amount, uint256 minAmountOut) public override arbManagerOnly() {
