@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: U-U-U-UPPPPP!!!
 pragma solidity ^0.7.6;
 
-
 import "./Address.sol";
 import "./IUniswapV2Pair.sol";
 import "./LiquidityLockedERC20.sol";
-import "./IUniswapV2Router02.sol";
 import "./SafeERC20.sol";
 import "./SafeMath.sol";
 import "./TokensRecoverable.sol";
@@ -17,7 +15,6 @@ contract RootedTransferGateV2 is TokensRecoverable, ITransferGate
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    IUniswapV2Router02 internal uniswapRouter;
     LiquidityLockedERC20 immutable internal rootedToken;
 
     bool public unrestricted;
@@ -35,21 +32,15 @@ contract RootedTransferGateV2 is TokensRecoverable, ITransferGate
 
     bool public transferInProgress;
 
-    constructor(LiquidityLockedERC20 _rootedToken, IUniswapV2Router02 _uniswapRouter, address _feeSplitter)
+    constructor(LiquidityLockedERC20 _rootedToken, address _feeSplitter)
     {
         rootedToken = _rootedToken;
-        uniswapRouter = _uniswapRouter;
         feeSplitter = _feeSplitter;
     }
 
     function setFeeSplitter(address _feeSplitter) public ownerOnly()
     {
         feeSplitter = _feeSplitter;
-    }
-
-    function setRouter(IUniswapV2Router02 _uniswapRouter) public ownerOnly()
-    {
-        uniswapRouter = _uniswapRouter;
     }
 
     function setLiquidityIncreaseRate(uint16 _liquidityIncreaseRate) public ownerOnly()
@@ -96,7 +87,7 @@ contract RootedTransferGateV2 is TokensRecoverable, ITransferGate
         unrestricted = _unrestricted;
     }
 
-    function handleTransfer(address sender, address from, address to, uint256 amount) public virtual override returns (uint256)
+    function handleTransfer(address, address from, address to, uint256 amount) public virtual override returns (uint256)
     {
         if (transferInProgress) {
             return 0;
@@ -107,6 +98,8 @@ contract RootedTransferGateV2 is TokensRecoverable, ITransferGate
         IUniswapV2Pair pair = IUniswapV2Pair(from);
         
         if (rootedToken.liquidityPairLocked(pair) && liquidityIncreaseRate > 0) {
+
+            rootedToken.setLiquidityLock(pair, false);
 
             IERC20 pairedToken = IERC20(getPairedToken(pair));
 
@@ -123,6 +116,8 @@ contract RootedTransferGateV2 is TokensRecoverable, ITransferGate
             transferInProgress = true;
             rootedToken.transfer(from, amount * liquidityIncreaseRate / 10000);
             transferInProgress = false;
+
+            rootedToken.setLiquidityLock(pair, false);
         }
 
         if (unrestricted || freeParticipants[from] || freeParticipants[to]) {
