@@ -20,7 +20,7 @@ contract RootedTransferGateV2 is TokensRecoverable, ITransferGate
     bool public unrestricted;
     mapping (address => bool) public liquidityControllers;
     mapping (address => bool) public feeControllers;
-    mapping (address => bool) public  freeParticipants;
+    mapping (address => bool) public freeParticipants;
 
     address public override feeSplitter;
     uint16 public feesRate;
