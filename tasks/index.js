@@ -1,0 +1,1 @@
+task("setupTransferGateV2", "sets up RootedTransferGateV2", require("./setupTransferGateV2"))
