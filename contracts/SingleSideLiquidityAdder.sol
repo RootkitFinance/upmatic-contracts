@@ -8,36 +8,37 @@ import "./RootedTransferGate.sol";
 // selling and setting the "to" address as the pool
 
 contract SingleSideLiquidityAdder is TokensRecoverable {    
-    address public bot;
-    IUniswapV2Router02 immutable private uniswapRouter;
-    RootedTransferGate immutable private gate;
-    IERC20 immutable private rooted;
-    address immutable private base;
-    address immutable private pool;
     
-    constructor (address _base, IERC20 _rooted, address _pool, RootedTransferGate _gate, IUniswapV2Router02 _uniswapRouter) {
-        base = _base;
+    IUniswapV2Router02 immutable private uniswapRouter;
+    RootedTransferGate private gate;
+    IERC20 immutable private rooted;
+    mapping (address => bool) controllers;
+    
+    constructor (IERC20 _rooted, RootedTransferGate _gate, IUniswapV2Router02 _uniswapRouter) {
         rooted = _rooted;
-        pool = _pool;
         gate = _gate;
         uniswapRouter = _uniswapRouter;
         _rooted.approve(address(_uniswapRouter), uint(-1));
     }
 
-    function setBot(address _bot) public ownerOnly() {
-        bot = _bot;
+    function setController(address _controller, bool _canControl) public ownerOnly() {
+        controllers[_controller] = _canControl;
     }
 
-    function addSingleSideLiquidity(uint256 amount, uint256 minAmountOut) public {
-        require(msg.sender == bot, "Bot only");
+    function updateGate(RootedTransferGate _gate) public ownerOnly() {
+        gate = _gate;
+    }
+
+    function addSingleSideLiquidity(uint256 amount, uint256 minAmountOut, address pairedToken, address pair) public {
+        require(controllers[msg.sender], "Not a Controller");
         require(rooted.balanceOf(address(this)) >= amount, "Not enough upToken Balance");
 
         gate.setUnrestricted(true);
 
         address[] memory path = new address[](2);
         path[0] = address(rooted);
-        path[1] = base;
-        uniswapRouter.swapExactTokensForTokens(amount, minAmountOut, path, pool, block.timestamp);
+        path[1] = pairedToken;
+        uniswapRouter.swapExactTokensForTokens(amount, minAmountOut, path, pair, block.timestamp);
 
         gate.setUnrestricted(false);
     }
