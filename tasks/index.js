@@ -1,1 +1,1 @@
-task("setupTransferGateV2", "sets up RootedTransferGateV2", require("./setupTransferGateV2"))
+task("setupTransferGateV2", "sets up in feb 2023", require("./setupTransferGateV2"))

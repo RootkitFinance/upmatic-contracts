@@ -10,7 +10,11 @@ module.exports = async function (taskArgs, hre) {
 	
 	console.log("Deployer ", deployer.address)
 
-	const tx = await gate.setFeeControllers(arb.address, true)
+	//const tx = await gate.setFeeControllers(arb.address, true)
+	//await tx.wait()
+	//console.log("tx       ", tx.transactionHash)
+
+	const tx = await gate.setFees("369")
 	await tx.wait()
 	console.log("tx       ", tx.transactionHash)
 }
